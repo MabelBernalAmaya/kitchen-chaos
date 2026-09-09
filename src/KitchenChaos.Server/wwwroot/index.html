@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Kitchen Chaos - Prueba de conexión</title>
+</head>
+<body>
+    <h1>Kitchen Chaos</h1>
+    <p>Prueba de conexión con el GameHub (SignalR)</p>
+
+    <input type="text" id="userInput" placeholder="Tu nombre" />
+    <input type="text" id="messageInput" placeholder="Mensaje" />
+    <button id="sendButton">Enviar</button>
+
+    <ul id="messagesList"></ul>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/gamehub")
+            .build();
+
+        connection.on("ReceiveMessage", function (user, message) {
+            const li = document.createElement("li");
+            li.textContent = user + ": " + message;
+            document.getElementById("messagesList").appendChild(li);
+        });
+
+        connection.start()
+            .then(function () {
+                console.log("Conectado al GameHub");
+            })
+            .catch(function (err) {
+                console.error(err.toString());
+            });
+
+        document.getElementById("sendButton").addEventListener("click", function () {
+            const user = document.getElementById("userInput").value;
+            const message = document.getElementById("messageInput").value;
+            connection.invoke("SendMessage", user, message)
+                .catch(function (err) {
+                    console.error(err.toString());
+                });
+        });
+    </script>
+</body>
+</html>
