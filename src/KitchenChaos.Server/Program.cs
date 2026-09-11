@@ -6,6 +6,7 @@ using KitchenChaos.Server.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<RoomService>();
 
 // Cosmos DB: cliente singleton reutilizable
 builder.Services.AddSingleton(_ =>

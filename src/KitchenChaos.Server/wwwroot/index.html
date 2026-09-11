@@ -8,10 +8,24 @@
     <h1>Kitchen Chaos</h1>
     <p>Prueba de conexión con el GameHub (SignalR)</p>
 
+    <h2>Sala</h2>
+    <input type="text" id="playerNameInput" placeholder="Tu nombre" />
+    <br />
+    <button id="createRoomButton">Crear sala</button>
+    <input type="text" id="roomCodeInput" placeholder="Código de sala" />
+    <button id="joinRoomButton">Unirse a sala</button>
+
+    <p id="roomCodeDisplay"></p>
+    <p id="roomErrorDisplay" style="color:red"></p>
+    <h3>Jugadores en la sala:</h3>
+    <ul id="playersList"></ul>
+
+    <hr />
+
+    <h2>Prueba de mensajes (chat de conexión)</h2>
     <input type="text" id="userInput" placeholder="Tu nombre" />
     <input type="text" id="messageInput" placeholder="Mensaje" />
     <button id="sendButton">Enviar</button>
-
     <ul id="messagesList"></ul>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
@@ -26,6 +40,21 @@
             document.getElementById("messagesList").appendChild(li);
         });
 
+        connection.on("RoomPlayersUpdated", function (playerNames) {
+            document.getElementById("roomErrorDisplay").textContent = "";
+            const list = document.getElementById("playersList");
+            list.innerHTML = "";
+            playerNames.forEach(function (name) {
+                const li = document.createElement("li");
+                li.textContent = name;
+                list.appendChild(li);
+            });
+        });
+
+        connection.on("JoinRoomError", function (error) {
+            document.getElementById("roomErrorDisplay").textContent = error;
+        });
+
         connection.start()
             .then(function () {
                 console.log("Conectado al GameHub");
@@ -33,6 +62,27 @@
             .catch(function (err) {
                 console.error(err.toString());
             });
+
+        document.getElementById("createRoomButton").addEventListener("click", function () {
+            const playerName = document.getElementById("playerNameInput").value;
+            connection.invoke("CreateRoom", playerName)
+                .then(function (roomCode) {
+                    document.getElementById("roomCodeDisplay").textContent = "Código de tu sala: " + roomCode;
+                    document.getElementById("roomCodeInput").value = roomCode;
+                })
+                .catch(function (err) {
+                    console.error(err.toString());
+                });
+        });
+
+        document.getElementById("joinRoomButton").addEventListener("click", function () {
+            const playerName = document.getElementById("playerNameInput").value;
+            const roomCode = document.getElementById("roomCodeInput").value;
+            connection.invoke("JoinRoom", roomCode, playerName)
+                .catch(function (err) {
+                    console.error(err.toString());
+                });
+        });
 
         document.getElementById("sendButton").addEventListener("click", function () {
             const user = document.getElementById("userInput").value;
