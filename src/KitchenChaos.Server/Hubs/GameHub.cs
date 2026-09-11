@@ -69,4 +69,50 @@ public class GameHub : Hub
     /// <summary>Reenvía un mensaje a todos los clientes conectados (prueba de conectividad).</summary>
     public async Task SendMessage(string user, string message) =>
         await Clients.All.SendAsync("ReceiveMessage", user, message);
+    
+    // AB#6 - El host inicia la partida
+    public async Task StartGame(string roomCode)
+    {
+        var result = _roomService.StartGame(
+            roomCode,
+            Context.ConnectionId
+        );
+
+        if (!result.Success)
+        {
+            await Clients.Caller.SendAsync(
+                "StartGameError",
+                result.Error
+            );
+
+            return;
+        }
+
+        // Todos los jugadores de la sala reciben el mismo evento
+        await Clients.Group(roomCode).SendAsync(
+            "GameStarted",
+            new
+            {
+                RoomCode = roomCode,
+                Level = 1
+            }
+        );
+    }
+    
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var room = _roomService.RemovePlayer(Context.ConnectionId);
+
+        if (room != null && room.Players.Count > 0)
+        {
+            var playerNames = room.Players
+                .Select(p => p.Name)
+                .ToList();
+
+            await Clients.Group(room.Code)
+                .SendAsync("RoomPlayersUpdated", playerNames);
+        }
+
+        await base.OnDisconnectedAsync(exception);
+    }
 }

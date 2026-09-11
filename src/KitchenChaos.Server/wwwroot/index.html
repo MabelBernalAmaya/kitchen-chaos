@@ -1,97 +1,460 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8" />
-    <title>Kitchen Chaos - Prueba de conexión</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Kitchen Chaos</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background: #fff4dc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 650px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #e85d04;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #555;
+            margin-bottom: 35px;
+        }
+
+        .menu,
+        .waiting-room,
+        .instructions {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu h2,
+        .waiting-room h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        #createRoomButton {
+            background: #f48c06;
+            color: white;
+        }
+
+        #joinRoomButton {
+            background: #2a9d8f;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #roomCodeDisplay {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e85d04;
+            margin-bottom: 15px;
+        }
+
+        #roomErrorDisplay {
+            color: red;
+            margin-bottom: 15px;
+        }
+
+        #playersList {
+            list-style: none;
+            padding: 0;
+        }
+
+        #playersList li {
+            background: #fff4dc;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .instructions {
+            text-align: left;
+        }
+
+        .instructions h2 {
+            color: #e85d04;
+            margin-bottom: 15px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        #connectionStatus {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
 </head>
+
 <body>
+
+<div class="container">
+
     <h1>Kitchen Chaos</h1>
-    <p>Prueba de conexión con el GameHub (SignalR)</p>
 
-    <h2>Sala</h2>
-    <input type="text" id="playerNameInput" placeholder="Tu nombre" />
-    <br />
-    <button id="createRoomButton">Crear sala</button>
-    <input type="text" id="roomCodeInput" placeholder="Código de sala" />
-    <button id="joinRoomButton">Unirse a sala</button>
+    <p class="subtitle">
+        Cocina, coopera y supera el caos con tu equipo.
+    </p>
 
-    <p id="roomCodeDisplay"></p>
-    <p id="roomErrorDisplay" style="color:red"></p>
-    <h3>Jugadores en la sala:</h3>
-    <ul id="playersList"></ul>
+    <div class="menu">
 
-    <hr />
+        <h2>Menú principal</h2>
 
-    <h2>Prueba de mensajes (chat de conexión)</h2>
-    <input type="text" id="userInput" placeholder="Tu nombre" />
-    <input type="text" id="messageInput" placeholder="Mensaje" />
-    <button id="sendButton">Enviar</button>
-    <ul id="messagesList"></ul>
+        <input
+            type="text"
+            id="playerNameInput"
+            placeholder="Tu nombre"
+        />
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/gamehub")
-            .build();
+        <button id="createRoomButton">
+            Crear sala
+        </button>
 
-        connection.on("ReceiveMessage", function (user, message) {
+        <input
+            type="text"
+            id="roomCodeInput"
+            placeholder="Código de la sala"
+        />
+
+        <button id="joinRoomButton">
+            Unirse a sala
+        </button>
+
+        <p id="roomErrorDisplay"></p>
+
+    </div>
+
+    <div class="waiting-room">
+
+        <h2>Sala de espera</h2>
+
+        <p id="roomCodeDisplay">
+            Todavía no estás en una sala.
+        </p>
+
+        <h3>Jugadores conectados</h3>
+
+        <ul id="playersList"></ul>
+
+        <button id="startGameButton" style="display: none;" disabled>
+            Iniciar partida
+        </button>
+
+        <p id="startGameMessage"></p>
+
+    </div>
+
+    <div id="gameScreen" class="menu" style="display: none;">
+
+        <h2>Nivel 1</h2>
+
+        <p>¡La partida ha comenzado!</p>
+
+        <p>Prepárate para cocinar con tu equipo.</p>
+
+    </div>
+
+    <div class="instructions">
+
+        <h2>¿Cómo jugar?</h2>
+
+        <ul>
+            <li>Crea una sala o únete usando un código.</li>
+            <li>Juega junto a otros cocineros.</li>
+            <li>Coordina las tareas de la cocina con tu equipo.</li>
+            <li>Prepara y entrega los pedidos antes de que termine el tiempo.</li>
+        </ul>
+
+    </div>
+
+    <p id="connectionStatus">
+        Conectando con el servidor...
+    </p>
+
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+<script>
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/gamehub")
+        .build();
+
+    let currentRoomCode = null;
+    let isHost = false;
+
+
+    // Actualizar lista de jugadores en tiempo real
+    connection.on("RoomPlayersUpdated", function (playerNames) {
+
+        document.getElementById("roomErrorDisplay").textContent = "";
+
+        const list = document.getElementById("playersList");
+        const startButton = document.getElementById("startGameButton");
+
+        list.innerHTML = "";
+
+        playerNames.forEach(function (name) {
+
             const li = document.createElement("li");
-            li.textContent = user + ": " + message;
-            document.getElementById("messagesList").appendChild(li);
+            li.textContent = name;
+
+            list.appendChild(li);
+
         });
 
-        connection.on("RoomPlayersUpdated", function (playerNames) {
+        // Solo el host ve el botón de iniciar
+        if (isHost) {
+
+            startButton.style.display = "block";
+
+            // Se necesitan mínimo 2 jugadores
+            startButton.disabled =
+                playerNames.length < 2 || playerNames.length > 4;
+
+            if (playerNames.length < 2) {
+
+                document.getElementById("startGameMessage").textContent =
+                    "Esperando al menos otro jugador...";
+
+            } else {
+
+                document.getElementById("startGameMessage").textContent =
+                    "La partida está lista para iniciar.";
+
+            }
+
+        } else {
+
+            startButton.style.display = "none";
+
+        }
+
+    });
+
+
+    // Error al intentar unirse
+    connection.on("JoinRoomError", function (error) {
+
+        document.getElementById("roomErrorDisplay").textContent = error;
+
+    });
+
+
+    // Error al intentar iniciar
+    connection.on("StartGameError", function (error) {
+
+        document.getElementById("startGameMessage").textContent = error;
+
+    });
+
+
+    // Todos reciben este evento cuando el host inicia
+    connection.on("GameStarted", function (gameInfo) {
+
+        document.querySelector(".menu").style.display = "none";
+
+        document.querySelector(".waiting-room").style.display = "none";
+
+        document.querySelector(".instructions").style.display = "none";
+
+        document.getElementById("gameScreen").style.display = "block";
+
+        document.getElementById("gameScreen")
+            .querySelector("h2")
+            .textContent = "Nivel " + gameInfo.level;
+
+    });
+
+
+    // Iniciar conexión con SignalR
+    connection.start()
+        .then(function () {
+
+            console.log("Conectado al GameHub");
+
+            document.getElementById("connectionStatus")
+                .textContent = "Servidor conectado";
+
+        })
+        .catch(function (err) {
+
+            console.error(err.toString());
+
+            document.getElementById("connectionStatus")
+                .textContent = "No se pudo conectar con el servidor";
+
+        });
+
+
+    // Crear sala
+    document.getElementById("createRoomButton")
+        .addEventListener("click", function () {
+
+            const playerName =
+                document.getElementById("playerNameInput").value.trim();
+
+            if (playerName === "") {
+
+                document.getElementById("roomErrorDisplay")
+                    .textContent = "Ingresa tu nombre.";
+
+                return;
+            }
+
             document.getElementById("roomErrorDisplay").textContent = "";
-            const list = document.getElementById("playersList");
-            list.innerHTML = "";
-            playerNames.forEach(function (name) {
-                const li = document.createElement("li");
-                li.textContent = name;
-                list.appendChild(li);
-            });
-        });
 
-        connection.on("JoinRoomError", function (error) {
-            document.getElementById("roomErrorDisplay").textContent = error;
-        });
-
-        connection.start()
-            .then(function () {
-                console.log("Conectado al GameHub");
-            })
-            .catch(function (err) {
-                console.error(err.toString());
-            });
-
-        document.getElementById("createRoomButton").addEventListener("click", function () {
-            const playerName = document.getElementById("playerNameInput").value;
             connection.invoke("CreateRoom", playerName)
                 .then(function (roomCode) {
-                    document.getElementById("roomCodeDisplay").textContent = "Código de tu sala: " + roomCode;
-                    document.getElementById("roomCodeInput").value = roomCode;
+
+                    // El creador es el host
+                    currentRoomCode = roomCode;
+                    isHost = true;
+
+                    document.getElementById("roomCodeDisplay")
+                        .textContent = "Código de tu sala: " + roomCode;
+
+                    document.getElementById("roomCodeInput")
+                        .value = roomCode;
+
                 })
                 .catch(function (err) {
+
                     console.error(err.toString());
+
+                    document.getElementById("roomErrorDisplay")
+                        .textContent = "No se pudo crear la sala.";
+
                 });
+
         });
 
-        document.getElementById("joinRoomButton").addEventListener("click", function () {
-            const playerName = document.getElementById("playerNameInput").value;
-            const roomCode = document.getElementById("roomCodeInput").value;
+
+    // Unirse a sala
+    document.getElementById("joinRoomButton")
+        .addEventListener("click", function () {
+
+            const playerName =
+                document.getElementById("playerNameInput").value.trim();
+
+            const roomCode =
+                document.getElementById("roomCodeInput").value.trim();
+
+            if (playerName === "") {
+
+                document.getElementById("roomErrorDisplay")
+                    .textContent = "Ingresa tu nombre.";
+
+                return;
+            }
+
+            if (roomCode === "") {
+
+                document.getElementById("roomErrorDisplay")
+                    .textContent = "Ingresa el código de la sala.";
+
+                return;
+            }
+
+            document.getElementById("roomErrorDisplay").textContent = "";
+
             connection.invoke("JoinRoom", roomCode, playerName)
+                .then(function () {
+
+                    // El que se une NO es host
+                    currentRoomCode = roomCode;
+                    isHost = false;
+
+                    document.getElementById("roomCodeDisplay")
+                        .textContent = "Sala: " + roomCode;
+
+                })
                 .catch(function (err) {
+
                     console.error(err.toString());
+
+                    document.getElementById("roomErrorDisplay")
+                        .textContent = "No se pudo unir a la sala.";
+
                 });
+
         });
 
-        document.getElementById("sendButton").addEventListener("click", function () {
-            const user = document.getElementById("userInput").value;
-            const message = document.getElementById("messageInput").value;
-            connection.invoke("SendMessage", user, message)
+
+    // Botón del host para iniciar la partida
+    document.getElementById("startGameButton")
+        .addEventListener("click", function () {
+
+            if (currentRoomCode === null) {
+                return;
+            }
+
+            connection.invoke("StartGame", currentRoomCode)
                 .catch(function (err) {
+
                     console.error(err.toString());
+
                 });
+
         });
-    </script>
+
+</script>
+
 </body>
 </html>
