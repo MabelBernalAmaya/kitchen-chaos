@@ -10,6 +10,13 @@ public class JoinRoomResult
     public Room? Room { get; set; }
 }
 
+public class StartGameResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    public Room? Room { get; set; }
+}
+
 public class RoomService
 {
     private const int MaxPlayers = 4;
@@ -21,7 +28,11 @@ public class RoomService
     public Room CreateRoom(string connectionId, string playerName)
     {
         var code = GenerateUniqueCode();
-        var room = new Room { Code = code };
+        var room = new Room
+        {
+            Code = code,
+            HostConnectionId = connectionId
+        };
         room.Players.Add(new Player { ConnectionId = connectionId, Name = playerName });
 
         _rooms[code] = room;
@@ -48,6 +59,85 @@ public class RoomService
         }
 
         return new JoinRoomResult { Success = true, Room = room };
+    }
+
+    public StartGameResult StartGame(string roomCode, string connectionId)
+    {
+        if (!_rooms.TryGetValue(roomCode, out var room))
+        {
+            return new StartGameResult
+            {
+                Success = false,
+                Error = "La sala no existe."
+            };
+        }
+
+        lock (room)
+        {
+            if (room.HostConnectionId != connectionId)
+            {
+                return new StartGameResult
+                {
+                    Success = false,
+                    Error = "Solo el host puede iniciar la partida."
+                };
+            }
+
+            if (room.Players.Count < 2)
+            {
+                return new StartGameResult
+                {
+                    Success = false,
+                    Error = "Se necesitan al menos 2 jugadores para iniciar."
+                };
+            }
+
+            if (room.HasStarted)
+            {
+                return new StartGameResult
+                {
+                    Success = false,
+                    Error = "La partida ya fue iniciada."
+                };
+            }
+
+            room.HasStarted = true;
+
+            return new StartGameResult
+            {
+                Success = true,
+                Room = room
+            };
+        }
+    }
+
+    public Room? RemovePlayer(string connectionId)
+    {
+        foreach (var room in _rooms.Values)
+        {
+            lock (room)
+            {
+                var player = room.Players
+                    .FirstOrDefault(p => p.ConnectionId == connectionId);
+
+                if (player == null)
+                {
+                    continue;
+                }
+
+                room.Players.Remove(player);
+
+                // Si ya no queda nadie, eliminamos la sala.
+                if (room.Players.Count == 0)
+                {
+                    _rooms.TryRemove(room.Code, out _);
+                }
+
+                return room;
+            }
+        }
+
+        return null;
     }
 
     private string GenerateUniqueCode()

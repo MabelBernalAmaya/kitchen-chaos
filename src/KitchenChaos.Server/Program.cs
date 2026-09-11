@@ -12,10 +12,18 @@ builder.Services.AddSingleton<RoomService>();
 builder.Services.AddSingleton(_ =>
 {
     var cfg = builder.Configuration;
+
     return new CosmosClient(
         cfg["CosmosDb:AccountEndpoint"]!,
         cfg["CosmosDb:AccountKey"]!,
-        new CosmosClientOptions { SerializerOptions = new() { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase } }
+        new CosmosClientOptions
+        {
+            ConnectionMode = ConnectionMode.Gateway,
+            SerializerOptions = new()
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            }
+        }
     );
 });
 
