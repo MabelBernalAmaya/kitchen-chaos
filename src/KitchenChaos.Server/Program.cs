@@ -19,10 +19,12 @@ builder.Services.AddSingleton(_ =>
         new CosmosClientOptions
         {
             ConnectionMode = ConnectionMode.Gateway,
-            SerializerOptions = new()
+            SerializerOptions = new() { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
+            // Emulador local usa certificado autofirmado
+            HttpClientFactory = () => new HttpClient(new HttpClientHandler
             {
-                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-            }
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            })
         }
     );
 });
